@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -70,12 +71,14 @@ public class Utils {
 
     public static String strNumberFormat(String number) {
         if (number.endsWith("k")) {
-            String v = number.substring(0, number.length() - 2);
-            return new BigDecimal(v).multiply(new BigDecimal(1000)).toString();
+            String v = number.substring(0, number.length() - 1);
+            return new BigDecimal(v).multiply(new BigDecimal(1000))
+                    .setScale(0, RoundingMode.HALF_UP).toPlainString();
         }
         if (number.endsWith("w")) {
-            String v = number.substring(0, number.length() - 2);
-            return new BigDecimal(v).multiply(new BigDecimal(10000)).toString();
+            String v = number.substring(0, number.length() - 1);
+            return new BigDecimal(v).multiply(new BigDecimal(10000))
+                    .setScale(0, RoundingMode.HALF_UP).toPlainString();
         }
         return number;
     }
