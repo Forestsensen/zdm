@@ -88,16 +88,31 @@ public class Utils {
     }
 
     public static void netWorkTest(String domain, Integer port) {
-        try {
-            System.out.println("正在检测网络连通性...");
-            try (Socket socket = new Socket()) {
-                socket.connect(new InetSocketAddress(domain, port), 10000);
-                System.out.println("网络连通性检测结果: 成功");
+        //增加重试: 单次探活超时不应终止整个任务(上游抓取本身另有重试机制)
+        //全部重试失败后仍按原行为抛出异常, 保证失败可见而非静默跳过
+        int attempts = Const.MAX_RETRY;
+        for (int i = 1; i <= attempts; i++) {
+            try {
+                System.out.println("正在检测网络连通性...(第" + i + "/" + attempts + "次)");
+                try (Socket socket = new Socket()) {
+                    socket.connect(new InetSocketAddress(domain, port), 15000);
+                    System.out.println("网络连通性检测结果: 成功");
+                    return;
+                }
+            } catch (IOException e) {
+                System.out.println("网络连通性检测异常(第" + i + "/" + attempts + "次): " + e.getMessage());
+                if (i == attempts) {
+                    e.printStackTrace();
+                    throw new RuntimeException("接口调用失败,程序终止");
+                }
+                //递增等待后重试, 给瞬时抖动留恢复时间
+                try {
+                    Thread.sleep(2000L * i);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("接口调用失败,程序终止");
+                }
             }
-        } catch (IOException e) {
-            System.out.println("网络连通性检测异常: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("接口调用失败,程序终止");
         }
     }
 }
